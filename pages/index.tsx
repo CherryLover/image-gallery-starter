@@ -62,7 +62,7 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
               Jiang jiwei ShutterShowcase
             </h1>
             <p className="max-w-[40ch] text-white/75 sm:max-w-[32ch]">
-              透过我的镜头，发现世界的美，沉浸于一个引人入胜的视觉之旅
+              透过镜头，发现世界的美
             </p>
           </div>
           {images.map(({ id, public_id, format, blurDataUrl }) => (
