@@ -8,12 +8,13 @@ import {
 } from '@heroicons/react/24/outline'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import { variants } from '../utils/animationVariants'
 import downloadPhoto from '../utils/downloadPhoto'
 import { range } from '../utils/range'
 import type { ImageProps, SharedModalProps } from '../utils/types'
+import FadeImage from './FadeImage'
 import Twitter from './Icons/Twitter'
 
 export default function SharedModal({
@@ -46,6 +47,14 @@ export default function SharedModal({
   })
 
   let currentImage = images ? images[index] : currentPhoto
+  const displaySrc = currentImage.srcLarge || currentImage.src
+  const fullSrc = currentImage.srcFull || currentImage.srcLarge || currentImage.src
+  const displayW = currentImage.widthLarge || currentImage.width
+  const displayH = currentImage.heightLarge || currentImage.height
+
+  useEffect(() => {
+    setLoaded(false)
+  }, [index, displaySrc])
 
   return (
     <MotionConfig
@@ -69,15 +78,18 @@ export default function SharedModal({
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute"
+                className="absolute max-h-full max-w-full"
               >
-                <Image
-                  src={currentImage.src}
-                  width={currentImage.width}
-                  height={currentImage.height}
+                <FadeImage
+                  src={displaySrc}
+                  width={displayW}
+                  height={displayH}
                   priority
                   alt="Gallery image"
-                  onLoadingComplete={() => setLoaded(true)}
+                  color={currentImage.color}
+                  blurDataUrl={currentImage.blurDataUrl}
+                  className="max-h-[80vh] w-auto max-w-full rounded-sm"
+                  onRevealed={() => setLoaded(true)}
                 />
               </motion.div>
             </AnimatePresence>
@@ -114,7 +126,7 @@ export default function SharedModal({
               <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
                 {navigation ? (
                   <a
-                    href={currentImage.src}
+                    href={fullSrc}
                     className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
                     target="_blank"
                     title="Open fullsize version"
@@ -124,10 +136,10 @@ export default function SharedModal({
                   </a>
                 ) : (
                   <a
-                    href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20pic%20from%20Next.js%20Conf!%0A%0Ahttps://nextjsconf-pics.vercel.app/p/${index}`}
+                    href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20pic!%0A%0Ahttps://shutters.flyooo.uk/p/${index}`}
                     className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
                     target="_blank"
-                    title="Open fullsize version"
+                    title="Share"
                     rel="noreferrer"
                   >
                     <Twitter className="h-5 w-5" />
@@ -136,7 +148,7 @@ export default function SharedModal({
                 <button
                   onClick={() =>
                     downloadPhoto(
-                      currentImage.src,
+                      fullSrc,
                       currentImage.filename || `${index}.jpg`
                     )
                   }

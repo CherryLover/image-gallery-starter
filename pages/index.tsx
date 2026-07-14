@@ -1,11 +1,11 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
 import Bridge from '../components/Icons/Bridge'
 import Logo from '../components/Icons/Logo'
+import FadeImage from '../components/FadeImage'
 import Modal from '../components/Modal'
 import { getImages } from '../utils/images'
 import type { ImageProps } from '../utils/types'
@@ -19,7 +19,6 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
   const lastViewedPhotoRef = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
-    // This effect keeps track of the last viewed photo in the modal to keep the index page in sync when the user navigates back
     if (lastViewedPhoto && !photoId) {
       lastViewedPhotoRef.current.scrollIntoView({ block: 'center' })
       setLastViewedPhoto(null)
@@ -71,15 +70,13 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
               as={`/p/${id}`}
               ref={id === Number(lastViewedPhoto) ? lastViewedPhotoRef : null}
               shallow
-              className="after:content group relative mb-5 block w-full cursor-zoom-in after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
-              style={{ backgroundColor: color }}
+              className="after:content group relative mb-5 block w-full cursor-zoom-in overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
             >
-              <Image
-                alt="Next.js Conf photo"
-                className="transform rounded-lg brightness-90 transition will-change-auto group-hover:brightness-110"
-                style={{ transform: 'translate3d(0, 0, 0)' }}
-                placeholder="blur"
-                blurDataURL={blurDataUrl}
+              <FadeImage
+                alt="Photography"
+                className="w-full rounded-lg brightness-90 transition will-change-auto group-hover:brightness-110"
+                color={color}
+                blurDataUrl={blurDataUrl}
                 src={src}
                 width={width}
                 height={height}
@@ -111,11 +108,9 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
 export default Home
 
 export async function getStaticProps() {
-  const images = getImages()
-
   return {
     props: {
-      images,
+      images: getImages(),
     },
   }
 }
