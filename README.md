@@ -1,31 +1,59 @@
-# Next.js & Cloudinary example app
+# Jiang jiwei ShutterShowcase
 
-This example shows how to create an image gallery site using Next.js, [Cloudinary](https://cloudinary.com), and [Tailwind](https://tailwindcss.com).
+个人摄影作品展示站。基于 Next.js 图库模板改造：图片在 Cloudflare R2，尺寸与主色等元数据写在仓库内 JSON。
 
-## Deploy your own
+## 数据怎么组织
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=next-example) or view the demo [here](https://nextconf-images.vercel.app/)
+| 内容 | 位置 |
+|------|------|
+| 原图 / 网页用 JPEG | Cloudflare R2 桶 `s3-hono`，路径 `gallery/` |
+| 公开访问 | `https://s3-store.flyooo.uk/gallery/文件名.jpg` |
+| 列表元数据 | `data/images.json`（宽高、主色、模糊占位、URL） |
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-cloudinary&project-name=nextjs-image-gallery&repository-name=with-cloudinary&env=NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,CLOUDINARY_FOLDER&envDescription=API%20Keys%20from%20Cloudinary%20needed%20to%20run%20this%20application.)
+运行站点**不需要**任何 Cloudinary 密钥。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-
-## How to use
-
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example::
-
-```bash
- npx create-next-app --example with-cloudinary nextjs-image-gallery
-```
+## 本地运行
 
 ```bash
-yarn create next-app --example with-cloudinary nextjs-image-gallery
+npm install
+npm run dev
 ```
+
+## 从 Cloudinary 再迁一次（可选）
+
+脚本在仓库里，和算法、生成 JSON 的逻辑放在一起：
 
 ```bash
-pnpm create next-app --example with-cloudinary nextjs-image-gallery
+# 密钥只走环境变量，不要写进代码仓库
+export CLOUDINARY_CLOUD_NAME=你的cloud_name
+export CLOUDINARY_API_KEY=你的key
+export CLOUDINARY_API_SECRET=你的secret
+
+# 默认只迁 skv 文件夹（个人作品），跳过 samples；HEIC 会转成 JPEG
+npm run migrate:cloudinary
+
+# 若图片已在本地 .migration/web，只重算主色和 JSON：
+npm run generate:images
 ```
 
-## References
+主色算法在 `scripts/generate-images-json.py`：缩略采样后对 RGB 做平方根均值（Unsplash 一类代表色常见做法），写入每条记录的 `color`。
 
-- Cloudinary API: https://cloudinary.com/documentation/transformation_reference
+## 只加几张新图
+
+1. 上传到 R2：
+
+```bash
+wrangler r2 object put s3-hono/gallery/新文件.jpg --file ./新文件.jpg --content-type image/jpeg --remote
+```
+
+2. 把文件放进 `.migration/web`，再生成 JSON：
+
+```bash
+npm run generate:images
+```
+
+3. 提交 `data/images.json` 并部署。
+
+## 部署
+
+推到 GitHub 后由 Vercel 等平台静态构建即可，无需配置 Cloudinary 环境变量。

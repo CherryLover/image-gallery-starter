@@ -2,9 +2,7 @@ import type { GetStaticProps, NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Carousel from '../../components/Carousel'
-import getResults from '../../utils/cachedImages'
-import cloudinary from '../../utils/cloudinary'
-import getBase64ImageUrl from '../../utils/generateBlurPlaceholder'
+import { getImageById, getImages } from '../../utils/images'
 import type { ImageProps } from '../../utils/types'
 
 const Home: NextPage = ({ currentPhoto }: { currentPhoto: ImageProps }) => {
@@ -12,12 +10,12 @@ const Home: NextPage = ({ currentPhoto }: { currentPhoto: ImageProps }) => {
   const { photoId } = router.query
   let index = Number(photoId)
 
-  const currentPhotoUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_scale,w_2560/${currentPhoto.public_id}.${currentPhoto.format}`
+  const currentPhotoUrl = currentPhoto.src
 
   return (
     <>
       <Head>
-        <title>Next.js Conf 2022 Photos</title>
+        <title>Jiang jiwei ShutterShowcase</title>
         <meta property="og:image" content={currentPhotoUrl} />
         <meta name="twitter:image" content={currentPhotoUrl} />
       </Head>
@@ -31,44 +29,25 @@ const Home: NextPage = ({ currentPhoto }: { currentPhoto: ImageProps }) => {
 export default Home
 
 export const getStaticProps: GetStaticProps = async (context) => {
-  const results = await getResults()
+  const currentPhoto = getImageById(Number(context.params.photoId))
 
-  let reducedResults: ImageProps[] = []
-  let i = 0
-  for (let result of results.resources) {
-    reducedResults.push({
-      id: i,
-      height: result.height,
-      width: result.width,
-      public_id: result.public_id,
-      format: result.format,
-    })
-    i++
+  if (!currentPhoto) {
+    return { notFound: true }
   }
-
-  const currentPhoto = reducedResults.find(
-    (img) => img.id === Number(context.params.photoId)
-  )
-  currentPhoto.blurDataUrl = await getBase64ImageUrl(currentPhoto)
 
   return {
     props: {
-      currentPhoto: currentPhoto,
+      currentPhoto,
     },
   }
 }
 
 export async function getStaticPaths() {
-  const results = await cloudinary.v2.search
-    .expression(`folder:${process.env.CLOUDINARY_FOLDER}/*`)
-    .sort_by('public_id', 'desc')
-    .max_results(400)
-    .execute()
+  const images = getImages()
 
-  let fullPaths = []
-  for (let i = 0; i < results.resources.length; i++) {
-    fullPaths.push({ params: { photoId: i.toString() } })
-  }
+  const fullPaths = images.map((img) => ({
+    params: { photoId: img.id.toString() },
+  }))
 
   return {
     paths: fullPaths,

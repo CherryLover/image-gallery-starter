@@ -4,16 +4,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate:cloudinary": "node scripts/migrate-from-cloudinary.mjs",
+    "generate:images": "python3 scripts/generate-images-json.py"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.4",
     "@heroicons/react": "^2.0.13",
-    "cloudinary": "^1.32.0",
     "eslint-config-next": "^13.0.1",
     "framer-motion": "^7.6.4",
-    "imagemin": "^8.0.1",
-    "imagemin-jpegtran": "^7.0.0",
     "next": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -25,6 +24,7 @@
     "@types/node": "18.11.9",
     "@types/react": "18.0.25",
     "autoprefixer": "^10.4.13",
+    "cloudinary": "^2.10.0",
     "postcss": "^8.4.18",
     "prettier": "^2.7.1",
     "prettier-plugin-tailwindcss": "^0.1.13",

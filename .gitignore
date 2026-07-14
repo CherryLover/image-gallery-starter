@@ -27,6 +27,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# local migration artifacts (originals downloaded for R2 upload)
+.migration/
+
 # vercel
 .vercel
 

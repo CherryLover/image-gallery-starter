@@ -7,8 +7,7 @@ import { useEffect, useRef } from 'react'
 import Bridge from '../components/Icons/Bridge'
 import Logo from '../components/Icons/Logo'
 import Modal from '../components/Modal'
-import cloudinary from '../utils/cloudinary'
-import getBase64ImageUrl from '../utils/generateBlurPlaceholder'
+import { getImages } from '../utils/images'
 import type { ImageProps } from '../utils/types'
 import { useLastViewedPhoto } from '../utils/useLastViewedPhoto'
 
@@ -65,7 +64,7 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
               透过镜头，发现世界的美
             </p>
           </div>
-          {images.map(({ id, public_id, format, blurDataUrl }) => (
+          {images.map(({ id, src, width, height, blurDataUrl, color }) => (
             <Link
               key={id}
               href={`/?photoId=${id}`}
@@ -73,6 +72,7 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
               ref={id === Number(lastViewedPhoto) ? lastViewedPhotoRef : null}
               shallow
               className="after:content group relative mb-5 block w-full cursor-zoom-in after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
+              style={{ backgroundColor: color }}
             >
               <Image
                 alt="Next.js Conf photo"
@@ -80,9 +80,9 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
                 style={{ transform: 'translate3d(0, 0, 0)' }}
                 placeholder="blur"
                 blurDataURL={blurDataUrl}
-                src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_scale,w_720/${public_id}.${format}`}
-                width={720}
-                height={480}
+                src={src}
+                width={width}
+                height={height}
                 sizes="(max-width: 640px) 100vw,
                   (max-width: 1280px) 50vw,
                   (max-width: 1536px) 33vw,
@@ -102,8 +102,7 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
         >
           Jiang jiwei
         </a>
-        ,{' '}
-        for the pictures.
+        , for the pictures.
       </footer>
     </>
   )
@@ -112,37 +111,11 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
 export default Home
 
 export async function getStaticProps() {
-  const results = await cloudinary.v2.search
-    .expression(`folder:${process.env.CLOUDINARY_FOLDER}/*`)
-    .sort_by('public_id', 'desc')
-    .max_results(400)
-    .execute()
-  let reducedResults: ImageProps[] = []
-
-  let i = 0
-  for (let result of results.resources) {
-    reducedResults.push({
-      id: i,
-      height: result.height,
-      width: result.width,
-      public_id: result.public_id,
-      format: result.format,
-    })
-    i++
-  }
-
-  const blurImagePromises = results.resources.map((image: ImageProps) => {
-    return getBase64ImageUrl(image)
-  })
-  const imagesWithBlurDataUrls = await Promise.all(blurImagePromises)
-
-  for (let i = 0; i < reducedResults.length; i++) {
-    reducedResults[i].blurDataUrl = imagesWithBlurDataUrls[i]
-  }
+  const images = getImages()
 
   return {
     props: {
-      images: reducedResults,
+      images,
     },
   }
 }
