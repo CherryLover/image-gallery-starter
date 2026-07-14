@@ -54,6 +54,24 @@ npm run generate:images
 
 3. 提交 `data/images.json` 并部署。
 
-## 部署
+## 部署（线上：https://shutters.flyooo.uk）
 
-推到 GitHub 后由 Vercel 等平台静态构建即可，无需配置 Cloudinary 环境变量。
+当前线上由 **Cloudflare Worker + R2** 托管，不依赖 Vercel 运行时：
+
+```bash
+# 1) 生成静态站 out/
+npm run build
+
+# 2) 上传 out/ 到 R2 前缀 shutters-web/（可用脚本或 wrangler 逐文件 put）
+# 3) 发布 Worker（路由：shutters.flyooo.uk 与 /*）
+cd .deploy-worker && wrangler deploy
+```
+
+也可：
+
+```bash
+# 仅静态产物到 Cloudflare Pages 预览域名
+npm run deploy
+```
+
+图片元数据在 `data/images.json`，图片本体在 R2 `gallery/`。无需 Cloudinary 环境变量。

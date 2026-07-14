@@ -1,0 +1,13 @@
+name = "shutters-gallery"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+routes = [
+  { pattern = "shutters.flyooo.uk", zone_name = "flyooo.uk" },
+  { pattern = "shutters.flyooo.uk/*", zone_name = "flyooo.uk" }
+]
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "s3-hono"

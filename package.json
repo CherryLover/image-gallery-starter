@@ -5,6 +5,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "export": "next build",
+    "deploy": "npm run build && wrangler pages deploy out --project-name=image-gallery-starter --branch=main",
     "migrate:cloudinary": "node scripts/migrate-from-cloudinary.mjs",
     "generate:images": "python3 scripts/generate-images-json.py"
   },
