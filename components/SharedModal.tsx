@@ -85,6 +85,7 @@ export default function SharedModal({
                   width={displayW}
                   height={displayH}
                   priority
+                  loadPriority={200}
                   alt="Gallery image"
                   color={currentImage.color}
                   blurDataUrl={currentImage.blurDataUrl}

@@ -63,7 +63,7 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
               透过镜头，发现世界的美
             </p>
           </div>
-          {images.map(({ id, src, width, height, blurDataUrl, color }) => (
+          {images.map(({ id, src, width, height, blurDataUrl, color }, index) => (
             <Link
               key={id}
               href={`/?photoId=${id}`}
@@ -80,6 +80,8 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
                 src={src}
                 width={width}
                 height={height}
+                // Near-top items get slightly higher pool priority once in view
+                loadPriority={Math.max(0, 20 - index)}
                 sizes="(max-width: 640px) 100vw,
                   (max-width: 1280px) 50vw,
                   (max-width: 1536px) 33vw,
