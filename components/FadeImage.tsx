@@ -1,35 +1,37 @@
-import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
-import { loadImageWithPool } from '../utils/imageLoadPool'
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { loadImageWithPool } from "../utils/imageLoadPool";
 
 type FadeImageProps = {
-  src: string
-  alt: string
-  width: number
-  height: number
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
   /** Solid color under the soft blur mask */
-  color?: string
+  color?: string;
   /** Tiny data-URL used as blurred mask while loading */
-  blurDataUrl?: string
+  blurDataUrl?: string;
   /** Fade duration in ms */
-  fadeMs?: number
-  className?: string
-  sizes?: string
+  fadeMs?: number;
+  className?: string;
+  sizes?: string;
   /**
    * High priority (modal / LCP): skip viewport wait and jump the queue.
    * Still goes through the concurrency pool.
    */
-  priority?: boolean
+  priority?: boolean;
   /** Called after fade-in finishes */
-  onRevealed?: () => void
+  onRevealed?: () => void;
   /**
    * How early to start loading before entering the viewport (px).
    * Only used when priority is false.
    */
-  rootMargin?: string
+  rootMargin?: string;
   /** Pool priority score; higher starts sooner among waiting jobs */
-  loadPriority?: number
-}
+  loadPriority?: number;
+  /** Show a centered spinner while loading (for large/modal views) */
+  showSpinner?: boolean;
+};
 
 /**
  * Concurrency-limited image load + soft mask fade reveal.
@@ -42,83 +44,89 @@ export default function FadeImage({
   alt,
   width,
   height,
-  color = '#1a1a1a',
+  color = "#1a1a1a",
   blurDataUrl,
   fadeMs = 450,
-  className = '',
+  className = "",
   sizes,
   priority = false,
   onRevealed,
-  rootMargin = '240px 0px',
+  rootMargin = "240px 0px",
   loadPriority,
+  showSpinner = false,
 }: FadeImageProps) {
-  const wrapRef = useRef<HTMLSpanElement>(null)
-  const [inView, setInView] = useState(priority)
-  const [readySrc, setReadySrc] = useState<string | null>(null)
-  const [loaded, setLoaded] = useState(false)
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const [inView, setInView] = useState(priority);
+  const [readySrc, setReadySrc] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   // Reset when source changes
   useEffect(() => {
-    setReadySrc(null)
-    setLoaded(false)
-    if (priority) setInView(true)
-  }, [src, priority])
+    setReadySrc(null);
+    setLoaded(false);
+    if (priority) setInView(true);
+  }, [src, priority]);
 
   // Viewport gate (skip when priority)
   useEffect(() => {
     if (priority) {
-      setInView(true)
-      return
+      setInView(true);
+      return;
     }
-    const el = wrapRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') {
-      setInView(true)
-      return
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
     }
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setInView(true)
-          io.disconnect()
+          setInView(true);
+          io.disconnect();
         }
       },
       { root: null, rootMargin, threshold: 0.01 }
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [priority, rootMargin, src])
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [priority, rootMargin, src]);
 
   // Enqueue load through the shared pool once near viewport
   useEffect(() => {
-    if (!inView || !src) return
+    if (!inView || !src) return;
 
-    const ac = new AbortController()
-    const prio =
-      loadPriority ??
-      (priority ? 100 : 0)
+    const ac = new AbortController();
+    const prio = loadPriority ?? (priority ? 100 : 0);
 
     loadImageWithPool(src, { priority: prio, signal: ac.signal })
       .then(() => {
-        if (ac.signal.aborted) return
-        setReadySrc(src)
-        setLoaded(true)
+        if (ac.signal.aborted) return;
+        setReadySrc(src);
+        setLoaded(true);
       })
       .catch(() => {
         // still try to show — browser may recover
         if (!ac.signal.aborted) {
-          setReadySrc(src)
-          setLoaded(true)
+          setReadySrc(src);
+          setLoaded(true);
         }
-      })
+      });
 
-    return () => ac.abort()
-  }, [inView, src, priority, loadPriority])
+    return () => ac.abort();
+  }, [inView, src, priority, loadPriority]);
 
   useEffect(() => {
-    if (!loaded || !onRevealed) return
-    const t = window.setTimeout(onRevealed, fadeMs)
-    return () => window.clearTimeout(t)
-  }, [loaded, fadeMs, onRevealed])
+    if (!loaded || !onRevealed) return;
+    const t = window.setTimeout(onRevealed, fadeMs);
+    return () => window.clearTimeout(t);
+  }, [loaded, fadeMs, onRevealed]);
+
+  // Transparent SVG with the exact final dimensions: keeps the wrapper's
+  // intrinsic size correct before the real image is available, so the box
+  // never collapses (e.g. shrink-to-fit contexts like the modal).
+  const placeholderSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"/>`
+  )}`;
 
   return (
     <span
@@ -129,21 +137,19 @@ export default function FadeImage({
         aspectRatio: `${width} / ${height}`,
       }}
     >
-      {readySrc ? (
-        <Image
-          src={readySrc}
-          alt={alt}
-          width={width}
-          height={height}
-          sizes={sizes}
-          // Already preloaded via pool; browser cache makes this instant
-          priority={priority}
-          className={`h-auto w-full transition-opacity ease-out ${
-            loaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ transitionDuration: `${fadeMs}ms` }}
-        />
-      ) : null}
+      <Image
+        src={readySrc ?? placeholderSrc}
+        alt={alt}
+        width={width}
+        height={height}
+        sizes={sizes}
+        // Already preloaded via pool; browser cache makes this instant
+        priority={priority}
+        className={`h-auto w-full transition-opacity ease-out ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ transitionDuration: `${fadeMs}ms` }}
+      />
 
       {/* Soft mask: color + blurred thumb, fades out after load */}
       <span
@@ -154,12 +160,23 @@ export default function FadeImage({
           transitionDuration: `${fadeMs}ms`,
           backgroundColor: color,
           backgroundImage: blurDataUrl ? `url(${blurDataUrl})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(20px)',
-          transform: 'scale(1.08)',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(20px)",
+          transform: "scale(1.08)",
         }}
       />
+
+      {/* Loading spinner (large views), fades out with the mask */}
+      {showSpinner && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity ease-out"
+          style={{ opacity: loaded ? 0 : 1, transitionDuration: `${fadeMs}ms` }}
+        >
+          <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white/90" />
+        </span>
+      )}
     </span>
-  )
+  );
 }
